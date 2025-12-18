@@ -78,15 +78,17 @@ class DatasetService:
     @staticmethod
     def _build_prefix_tsquery(query: str) -> str | None:
         """
-        Build a prefix tsquery string like 'foo:* & bar:*' from free text.
+        Build a prefix tsquery string like '*foo:* & *bar:*' from free text.
 
         - Tokenizes on non-word characters.
         - Filters out tokens shorter than 2 characters (e.g., single-character tokens are dropped).
         - Appends ':*' to each token to enable prefix matching.
+        - Prepends '*' to each token to enable infix matching (e.g., 'pple' matches 'apple').
         - Returns None if no valid tokens remain after filtering.
 
         Example:
-            'Hello world!' becomes 'hello:* & world:*'
+            'Hello world!' becomes '*hello:* & *world:*'
+            'pple' can match 'apple' due to the leading '*'
             'a b' returns None (all tokens too short)
         """
         if not query:
@@ -94,7 +96,7 @@ class DatasetService:
         tokens = [t for t in re.split(r"\W+", query.lower()) if len(t) >= 2]
         if not tokens:
             return None
-        prefixed = [f"{t}:*" for t in tokens]
+        prefixed = [f"*{t}:*" for t in tokens]
         return " & ".join(prefixed)
 
     def get_dataset(self, id: UUID, user: UserModel) -> DatasetGet:
